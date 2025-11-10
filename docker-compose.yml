@@ -18,9 +18,11 @@ services:
       - ./config:/config
       - /lib/modules:/lib/modules
     ports:
-      - 51900:51900/udp
+      - 51900:51820/udp
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
     restart: unless-stopped
     networks:
       - surikat-network
