@@ -11,7 +11,7 @@ services:
       - TZ=Europe/Madrid
       - SERVERURL=34.175.100.81
       - SERVERPORT=51900
-      - PEERS=jaalvarez2818,alberto
+      - PEERS=jaalvarez2818,alberto,airam,roberto,carlos
       - PEERDNS=1.1.1.1
       - INTERNAL_SUBNET=10.8.0.0/24
     volumes:
