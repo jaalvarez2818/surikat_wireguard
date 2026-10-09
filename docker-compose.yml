@@ -31,15 +31,11 @@ services:
       - surikat-network
 
 networks:
-  # Red propia de la VPN para servicios que no están en surikat-network.
+  # Red compartida (172.20.0.0/16) para servicios que no están en surikat-network.
   # WireGuard hace de gateway: enruta el tráfico VPN (10.8.0.0/24) hacia esta red.
   vpn-network:
     name: surikat-vpn
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16
+    external: true
 
   # Red existente de los servicios de Surikat (172.18.0.0/16), accesible desde la VPN.
   surikat-network:

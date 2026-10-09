@@ -31,10 +31,11 @@ Los peers reciben rutas solo para `10.8.0.0/24`, `172.18.0.0/16` y `172.20.0.0/1
 
 ### Requisitos previos
 
-La red externa `surikat-network` debe existir:
+Las redes externas `surikat-network` y `surikat-vpn` deben existir:
 
 ```bash
 docker network create --driver bridge --subnet 172.18.0.0/16 surikat-network
+docker network create --driver bridge --subnet 172.20.0.0/16 surikat-vpn
 ```
 
 ### Arrancar
