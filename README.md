@@ -13,13 +13,17 @@ WireGuard container (10.8.0.1)
        │
        │  actúa como gateway NAT
        │
-red Docker surikat-vpn (172.20.0.0/16)
-       ├── postgres          172.20.1.2
-       ├── otro-servicio     172.20.1.3
-       └── ...
+       ├── red surikat-network (172.18.0.0/16)   servicios existentes
+       │       ├── surikat_geoserver_db   172.18.0.205
+       │       └── ...
+       │
+       └── red surikat-vpn (172.20.0.0/16)       servicios fuera de surikat-network
+               └── ...
 ```
 
-Los peers reciben rutas solo para `10.8.0.0/24` y `172.20.0.0/16` (split-tunnel). El resto del tráfico del cliente usa su conexión local normal.
+Los peers reciben rutas solo para `10.8.0.0/24`, `172.18.0.0/16` y `172.20.0.0/16` (split-tunnel). El resto del tráfico del cliente usa su conexión local normal.
+
+> Si se cambia `ALLOWEDIPS` (o cualquier variable de entorno), hay que recrear el contenedor y **volver a importar** la configuración en cada cliente, ya que los `.conf` antiguos conservan las rutas anteriores.
 
 ---
 
@@ -71,33 +75,13 @@ La configuración del nuevo peer aparecerá en `config/peer_nuevo_usuario/`.
 
 ---
 
-## Conectar un servicio a la VPN
+## Acceder a los servicios desde la VPN
 
-Para que un servicio sea accesible desde la VPN tiene que unirse a la red `surikat-vpn` con una IP fija dentro del rango `172.20.1.x`.
+Desde la VPN se accede directamente a la **IP interna del contenedor** y a su **puerto interno** (no al puerto mapeado en el host). No es necesario exponer puertos (`ports:`). Los nombres de contenedor no se resuelven por DNS: hay que usar IPs.
 
-### En el docker-compose del servicio
+### Servicios en surikat-network
 
-```yaml
-services:
-  mi_servicio:
-    image: ...
-    networks:
-      surikat-network:          # red existente del servicio
-        ipv4_address: 172.18.0.xxx
-      vpn-network:              # añadir esto
-        ipv4_address: 172.20.1.X  # elegir una IP libre
-
-networks:
-  surikat-network:
-    external: true
-  vpn-network:                  # declarar como externa
-    external: true
-    name: surikat-vpn
-```
-
-> No es necesario exponer puertos al host (`ports:`). Desde la VPN se accede directamente al puerto interno del contenedor.
-
-### Ejemplo: base de datos PostgreSQL
+Cualquier contenedor en `surikat-network` es accesible sin cambios. Conviene que tenga IP fija para que no cambie al reiniciar:
 
 ```yaml
 services:
@@ -108,27 +92,39 @@ services:
     networks:
       surikat-network:
         ipv4_address: 172.18.0.205
-      vpn-network:
-        ipv4_address: 172.20.1.10
 
 networks:
   surikat-network:
     external: true
+```
+
+Desde la VPN: `psql -h 172.18.0.205 -p 5432 -U usuario`
+
+### Servicios fuera de surikat-network
+
+Si un servicio no está en `surikat-network`, se puede unir a la red `surikat-vpn` con una IP fija en el rango `172.20.1.x`:
+
+```yaml
+services:
+  mi_servicio:
+    image: ...
+    networks:
+      vpn-network:
+        ipv4_address: 172.20.1.X  # elegir una IP libre
+
+networks:
   vpn-network:
     external: true
     name: surikat-vpn
 ```
 
-Desde la VPN: `psql -h 172.20.1.10 -p 5432 -U usuario`
-
-### IPs asignadas
+### IPs asignadas en surikat-vpn
 
 Llevar un registro de las IPs usadas para evitar conflictos:
 
 | Servicio | IP en surikat-vpn |
 |----------|-------------------|
 | _reservado gateway_ | 172.20.0.1 |
-| surikat_geoserver_db | 172.20.1.10 |
 
 ---
 
@@ -162,7 +158,13 @@ docker compose logs -f wireguard
 # Reiniciar
 docker compose restart wireguard
 
-# Ver IP de un contenedor en surikat-vpn
+# Ver IP de un contenedor (sustituir la red por surikat-vpn si aplica)
 docker inspect <nombre_contenedor> \
-  --format '{{(index .NetworkSettings.Networks "surikat-vpn").IPAddress}}'
+  --format '{{(index .NetworkSettings.Networks "surikat-network").IPAddress}}'
 ```
+
+### Si conecta pero no se llega a los servicios
+
+1. `docker exec surikat_wireguard wg show` → el peer debe tener un `latest handshake` reciente. Si no, revisar que el firewall (GCP) permite **UDP 51900** de entrada.
+2. Comprobar que el `.conf` del cliente tiene en `AllowedIPs` la red del servicio. Si no, reimportarlo.
+3. Comprobar que la red local del cliente no usa `172.18.x.x` ni `172.20.x.x` (conflicto de rutas).

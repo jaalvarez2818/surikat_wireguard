@@ -14,8 +14,8 @@ services:
       - PEERS=jaalvarez2818,alberto,airam,carlos,roberto
       - PEERDNS=1.1.1.1
       - INTERNAL_SUBNET=10.8.0.0/24
-      # Rutas que reciben los peers: subnet VPN + red Docker de servicios
-      - ALLOWEDIPS=10.8.0.0/24,172.20.0.0/16
+      # Rutas que reciben los peers: subnet VPN + surikat-vpn + surikat-network
+      - ALLOWEDIPS=10.8.0.0/24,172.20.0.0/16,172.18.0.0/16
     volumes:
       - ./config:/config
       - /lib/modules:/lib/modules
@@ -30,27 +30,8 @@ services:
       - vpn-network
       - surikat-network
 
-  # ─── Añade aquí tus servicios conectándolos a vpn-network ────────────────
-  #
-  # Cada servicio en vpn-network recibe una IP de 172.20.x.x
-  # Desde la VPN te conectas a esa IP (no al puerto mapeado en el host).
-  #
-  # Ejemplo postgres accesible desde VPN en 172.20.1.2:5432
-  #
-  # postgres:
-  #   image: postgres:16
-  #   container_name: surikat_postgres
-  #   environment:
-  #     POSTGRES_PASSWORD: secret
-  #   ports:
-  #     - "5434:5432"   # opcional, para acceso desde el host
-  #   networks:
-  #     vpn-network:
-  #       ipv4_address: 172.20.1.2   # IP fija para que no cambie al reiniciar
-  #   restart: always
-
 networks:
-  # Red compartida entre WireGuard y todos los servicios que quieres exponer por VPN.
+  # Red propia de la VPN para servicios que no están en surikat-network.
   # WireGuard hace de gateway: enruta el tráfico VPN (10.8.0.0/24) hacia esta red.
   vpn-network:
     name: surikat-vpn
@@ -60,5 +41,6 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 
+  # Red existente de los servicios de Surikat (172.18.0.0/16), accesible desde la VPN.
   surikat-network:
     external: true
