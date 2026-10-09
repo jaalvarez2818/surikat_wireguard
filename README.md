@@ -23,6 +23,8 @@ WireGuard container (10.8.0.1)
 
 Los peers reciben rutas solo para `10.8.0.0/24`, `172.18.0.0/16` y `172.20.0.0/16` (split-tunnel). El resto del tráfico del cliente usa su conexión local normal.
 
+El DNS de los peers es `10.8.0.1` (`PEERDNS=auto`): el CoreDNS del contenedor, alcanzable por el túnel. No se debe poner un DNS público como `1.1.1.1`, porque queda fuera de `AllowedIPs` y el cliente se queda sin resolución de nombres (parece que "no hay internet").
+
 > Si se cambia `ALLOWEDIPS` (o cualquier variable de entorno), hay que recrear el contenedor y **volver a importar** la configuración en cada cliente, ya que los `.conf` antiguos conservan las rutas anteriores.
 
 ---
@@ -126,6 +128,7 @@ Llevar un registro de las IPs usadas para evitar conflictos:
 | Servicio | IP en surikat-vpn |
 |----------|-------------------|
 | _reservado gateway_ | 172.20.0.1 |
+| portainer | 172.20.1.11 (`https://172.20.1.11:9443`) |
 
 ---
 
@@ -169,3 +172,7 @@ docker inspect <nombre_contenedor> \
 1. `docker exec surikat_wireguard wg show` → el peer debe tener un `latest handshake` reciente. Si no, revisar que el firewall (GCP) permite **UDP 51900** de entrada.
 2. Comprobar que el `.conf` del cliente tiene en `AllowedIPs` la red del servicio. Si no, reimportarlo.
 3. Comprobar que la red local del cliente no usa `172.18.x.x` ni `172.20.x.x` (conflicto de rutas).
+
+### Si al conectar se pierde internet
+
+Casi siempre es DNS: `ping 1.1.1.1` funciona pero los dominios no resuelven. Comprobar que el `.conf` del cliente tiene `DNS = 10.8.0.1`; si tiene otro (p.ej. `1.1.1.1`), es un `.conf` antiguo y hay que reimportarlo.

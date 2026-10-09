@@ -12,7 +12,9 @@ services:
       - SERVERURL=34.175.100.81
       - SERVERPORT=51900
       - PEERS=jaalvarez2818,alberto,airam,carlos,roberto
-      - PEERDNS=1.1.1.1
+      # auto = los peers usan como DNS el CoreDNS del contenedor (10.8.0.1), que va por el túnel.
+      # No usar un DNS público (p.ej. 1.1.1.1): queda fuera de ALLOWEDIPS y rompe la resolución en el cliente.
+      - PEERDNS=auto
       - INTERNAL_SUBNET=10.8.0.0/24
       # Rutas que reciben los peers: subnet VPN + surikat-vpn + surikat-network
       - ALLOWEDIPS=10.8.0.0/24,172.20.0.0/16,172.18.0.0/16
