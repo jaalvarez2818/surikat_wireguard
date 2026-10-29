@@ -21,7 +21,9 @@ WireGuard container (10.8.0.1)
                └── ...
 ```
 
-Los peers reciben rutas solo para `10.8.0.0/24`, `172.18.0.0/16` y `172.20.0.0/16` (split-tunnel). El resto del tráfico del cliente usa su conexión local normal.
+Los peers reciben rutas solo para `10.8.0.0/24`, `172.18.0.0/16`, `172.20.0.0/16` y `212.128.100.9/32` (split-tunnel). El resto del tráfico del cliente usa su conexión local normal.
+
+`212.128.100.9` solo acepta SSH desde la IP pública del servidor (`34.175.100.81`). Al enrutarla por el túnel, el contenedor la enmascara (NAT) y sale a internet con la IP del servidor, así que desde la VPN basta con `ssh usuario@212.128.100.9`. Todo el tráfico hacia esa IP (no solo el puerto 22) pasa por la VPN.
 
 El DNS de los peers es `10.8.0.1` (`PEERDNS=auto`): el CoreDNS del contenedor, alcanzable por el túnel. No se debe poner un DNS público como `1.1.1.1`, porque queda fuera de `AllowedIPs` y el cliente se queda sin resolución de nombres (parece que "no hay internet").
 
@@ -172,6 +174,7 @@ docker inspect <nombre_contenedor> \
 1. `docker exec surikat_wireguard wg show` → el peer debe tener un `latest handshake` reciente. Si no, revisar que el firewall (GCP) permite **UDP 51900** de entrada.
 2. Comprobar que el `.conf` del cliente tiene en `AllowedIPs` la red del servicio. Si no, reimportarlo.
 3. Comprobar que la red local del cliente no usa `172.18.x.x` ni `172.20.x.x` (conflicto de rutas).
+4. Para `212.128.100.9`: comprobar que sale con la IP del servidor ejecutando en el servidor `curl -4 ifconfig.me` (debe dar `34.175.100.81`).
 
 ### Si al conectar se pierde internet
 

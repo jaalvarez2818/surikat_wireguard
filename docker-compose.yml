@@ -17,7 +17,8 @@ services:
       - PEERDNS=auto
       - INTERNAL_SUBNET=10.8.0.0/24
       # Rutas que reciben los peers: subnet VPN + surikat-vpn + surikat-network
-      - ALLOWEDIPS=10.8.0.0/24,172.20.0.0/16,172.18.0.0/16
+      # + 212.128.100.9 (SSH solo autorizado desde la IP pública del servidor, 34.175.100.81)
+      - ALLOWEDIPS=10.8.0.0/24,172.20.0.0/16,172.18.0.0/16,212.128.100.9/32
     volumes:
       - ./config:/config
       - /lib/modules:/lib/modules
